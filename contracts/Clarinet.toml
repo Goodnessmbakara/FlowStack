@@ -10,7 +10,7 @@ boot_zeta = 2.0
 
 [contracts.flowstack]
 path = "contracts/flowstack.clar"
-clarity_version = 2
+clarity_version = 1
 
 [repl.analysis]
 passes = ["check_checker"]
