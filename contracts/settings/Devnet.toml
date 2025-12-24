@@ -1,0 +1,10 @@
+[network.devnet]
+name = "devnet"
+rpc_bind = "0.0.0.0:3902"
+p2p_bind = "0.0.0.0:20443"
+
+[network.testnet]
+name = "testnet"
+
+[network.mainnet]
+name = "mainnet"
