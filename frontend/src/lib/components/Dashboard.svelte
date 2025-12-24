@@ -1,6 +1,10 @@
 <script lang="ts">
   import { account } from '../wallet'
   
+  export let onCreateClick: () => void
+  export let onStreamClick: (id: string) => void
+  export let onBack: () => void
+  
   let incomingStreams = []
   let outgoingStreams = []
   
@@ -23,7 +27,10 @@
       <h2 class="text-3xl font-bold mb-2">My Dashboard</h2>
       <p class="text-slate-400">Manage your incoming and outgoing payment streams.</p>
     </div>
-    <button class="px-6 py-3 bg-white text-slate-950 rounded-xl font-bold hover:bg-slate-200 transition-all active:scale-95">
+    <button 
+      on:click={onCreateClick}
+      class="px-6 py-3 bg-white text-slate-950 rounded-xl font-bold hover:bg-slate-200 transition-all active:scale-95"
+    >
       + Create Stream
     </button>
   </div>
@@ -58,7 +65,10 @@
         </thead>
         <tbody class="divide-y divide-slate-800">
           {#each incomingStreams as stream}
-            <tr class="hover:bg-slate-800/30 transition-colors">
+            <tr 
+              class="hover:bg-slate-800/30 transition-colors cursor-pointer"
+              on:click={() => onStreamClick(stream.id)}
+            >
               <td class="px-6 py-6 font-mono text-sm">{stream.sender}</td>
               <td class="px-6 py-6 text-sm">{stream.rate}</td>
               <td class="px-6 py-6 text-sm font-bold text-green-400">+{stream.available} STX</td>
@@ -68,7 +78,10 @@
                 </div>
               </td>
               <td class="px-6 py-6 text-right">
-                <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-semibold transition-all">
+                <button 
+                  on:click={onBack}
+                  class="mb-8 text-slate-400 hover:text-white transition-colors flex items-center gap-2 text-sm"
+                >
                   Withdraw
                 </button>
               </td>
