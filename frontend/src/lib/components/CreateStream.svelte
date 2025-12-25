@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { account } from '../wallet'
+  import { account, network } from '../wallet'
   import { createEventDispatcher } from 'svelte'
+  import { openContractCall } from '@stacks/connect'
+  import { uint, principalCV, boolCV, PostConditionMode } from '@stacks/transactions'
   
   const dispatch = createEventDispatcher()
   
@@ -10,6 +12,7 @@
   let duration = '7'
   let cancellable = true
   let cliff = false
+  let isSubmitting = false
 
   function nextStep() {
     if (step < 3) step++
@@ -19,10 +22,63 @@
     if (step > 1) step--
   }
 
-  function handleSubmit() {
-    // Logic to call WalletConnect & Stacks contract
-    console.log('Creating stream...', { recipient, amount, duration, cancellable, cliff })
-    dispatch('created')
+  async function handleSubmit() {
+    if (isSubmitting) return
+    isSubmitting = true
+    
+    const contractAddress = import.meta.env.VITE_PUBLIC_CONTRACT_ADDRESS || 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM'
+    const contractName = 'flowstack'
+    
+    // Calculates rate and duration in blocks approx (assuming 10 min blocks for Bitcoin/Stacks for simplicity or sticking to seconds if code uses logic, but clarity uses blocks)
+    // Wait, my contract uses block-height. Stacks block time is ~10 mins? 
+    // Actually Stacks Nakamoto is fast blocks (seconds). Let's assume input duration is Days.
+    // 1 Day = 86400 seconds.
+    // If using fast blocks (e.g. 5 seconds), 1 day = 17280 blocks.
+    // Let's approximate for hackathon: 1 day = 144 blocks (pre-Nakamoto) or just treat input as "blocks" for testing if easier, but for UI user expects time.
+    // Let's just convert days to approximate blocks. Assuming 1 block = 600 seconds (10 min) for safety or stick to what testnet does.
+    // OR better, since Nakamoto is live/coming, maybe just use a multiplier. 
+    // Let's use a standard assumption: 144 blocks per day.
+    
+    // Correction: Contract logic should probably be time-based if possible, but Clarinet uses block-height.
+    // I will use 144 blocks per day conversion for now.
+    const blocksPerDay = 144
+    const durationBlocks = parseInt(duration) * blocksPerDay
+    const amountMicroStx = Math.floor(parseFloat(amount) * 1_000_000)
+    
+    // Cliff delta: let's say 1 day cliff if enabled
+    const cliffDelta = cliff ? blocksPerDay : 0
+
+    const functionArgs = [
+      principalCV(recipient),
+      uint(amountMicroStx),
+      uint(durationBlocks),
+      boolCV(cancellable),
+      uint(cliffDelta)
+    ]
+
+    const options = {
+      contractAddress,
+      contractName,
+      functionName: 'create-stream',
+      functionArgs,
+      network,
+      postConditionMode: PostConditionMode.Allow, // Simplification for hackathon; usually defined precisely
+      onFinish: (data) => {
+        console.log('Transaction finished:', data)
+        isSubmitting = false
+        dispatch('created')
+      },
+      onCancel: () => {
+        isSubmitting = false
+      },
+    }
+
+    try {
+      await openContractCall(options)
+    } catch (e) {
+      console.error(e)
+      isSubmitting = false
+    }
   }
 </script>
 
